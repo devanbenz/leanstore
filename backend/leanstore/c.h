@@ -7,7 +7,13 @@
 extern "C" {
 #endif
 
+   typedef struct BytesPayloadHandle BytesPayloadHandle;
+
+   typedef struct RelationHandler RelationHandler;
+
    typedef struct LeanStoreHandle LeanStoreHandle;
+
+   typedef struct LeanStoreAdapterHandle LeanStoreAdapterHandle;
 
    typedef struct CRManagerHandle CRManagerHandle;
 
@@ -40,6 +46,10 @@ extern "C" {
    void crm_schedule_job_sync(CRManagerHandle* handle, uint64_t jobid, JobFunction job, void* fn);
 
    void leanstore_release_cr_manager(CRManagerHandle* cr_manager);
+
+   LeanStoreAdapterHandle* leanstore_get_adapter(LeanStoreHandle* handle);
+
+   void leanstore_release_adapter(LeanStoreAdapterHandle* adapter);
 
 #ifdef __cplusplus
 }

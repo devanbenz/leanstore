@@ -4,7 +4,27 @@
 #include <cstring>
 #include <memory>
 
+#include "../../frontend/shared/GenericSchema.hpp"
+
 using namespace leanstore;
+
+struct AbstractDataType
+{
+   byte *data;
+   size_t size;
+   int32_t data_type;
+};
+
+struct BytesPayloadHandle
+{
+   AbstractDataType data;
+};
+
+struct RelationHandler
+{
+   void* key{};
+   void* bytes{};
+};
 
 struct CRManagerHandle {
    cr::CRManager* cr_manager_inner;
@@ -12,6 +32,11 @@ struct CRManagerHandle {
 
 struct LeanStoreHandle {
    std::unique_ptr<LeanStore> store;
+};
+
+struct LeanStoreAdapter
+{
+   std::unique_ptr<LeanStoreAdapter> adapter;
 };
 
 static void set_flags_from_config(const LeanStoreConfig* config)
@@ -140,3 +165,11 @@ void crm_schedule_job_sync(CRManagerHandle* handle, uint64_t jobid, JobFunction 
 
    cr_manager->scheduleJobSync(jobid, cpp_fn);
 }
+
+LeanStoreAdapterHandle* leanstore_open_adapter(LeanStoreHandle* handle)
+{
+   if (!handle) return nullptr;
+
+}
+
+void leanstore_release_adapter(LeanStoreAdapterHandle* adapter);
