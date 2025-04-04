@@ -7,12 +7,10 @@
 extern "C" {
 #endif
 
-   // Opaque type for LeanStore handle
    typedef struct LeanStoreHandle LeanStoreHandle;
 
    typedef struct CRManagerHandle CRManagerHandle;
 
-   // Configuration structure that mirrors LeanStore flags
    typedef struct {
       const char* ssd_path;
       const char* recover_file;

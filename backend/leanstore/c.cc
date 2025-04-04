@@ -92,10 +92,8 @@ LeanStoreHandle* leanstore_open(const LeanStoreConfig* config)
 
 void leanstore_close(LeanStoreHandle* handle)
 {
-    if (handle) {
-        // The unique_ptr will call the destructor automatically
-        delete handle;
-    }
+   if (!handle) return;
+   if (handle) delete handle;
 }
 
 CRManagerHandle* leanstore_get_cr_manager(LeanStoreHandle* leanstore_handle)
