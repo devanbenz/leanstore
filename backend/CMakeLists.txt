@@ -14,7 +14,7 @@ endif ()
 # ---------------------------------------------------------------------------
 # Library
 # ---------------------------------------------------------------------------
-add_library(leanstore STATIC ${LEANSTORE_CC} ${LEANSTORE_C})
+add_library(leanstore STATIC ${LEANSTORE_CC})
 
 OPTION(SANI "Compile leanstore with sanitizers" OFF)
 IF(SANI)
