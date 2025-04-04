@@ -6,7 +6,7 @@ project(leanstore)
 # ---------------------------------------------------------------------------
 # Files
 # ---------------------------------------------------------------------------
-file(GLOB_RECURSE LEANSTORE_CC **.cpp **/**.cpp **.hpp **/**.hpp)
+file(GLOB_RECURSE LEANSTORE_CC **.cpp **/**.cpp **.hpp **/**.hpp **.c **/**.c **.h **/**.h **.cc **/**.cc)
 if (NOT UNIX)
     message(SEND_ERROR "unsupported platform")
 endif ()
@@ -14,7 +14,7 @@ endif ()
 # ---------------------------------------------------------------------------
 # Library
 # ---------------------------------------------------------------------------
-add_library(leanstore STATIC ${LEANSTORE_CC})
+add_library(leanstore STATIC ${LEANSTORE_CC} ${LEANSTORE_C})
 
 OPTION(SANI "Compile leanstore with sanitizers" OFF)
 IF(SANI)
