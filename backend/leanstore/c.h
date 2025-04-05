@@ -26,7 +26,7 @@ extern "C" {
    } LeanStoreConfig;
 
 
-   void leanstore_init_config(LeanStoreConfig* config);
+   LeanStoreConfig* leanstore_init_config();
 
    LeanStoreHandle* leanstore_open(const LeanStoreConfig* config);
 

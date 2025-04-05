@@ -12,6 +12,11 @@ struct LeanStoreHandle {
    std::unique_ptr<LeanStore> store;
 };
 
+struct LeanStoreConfig
+{
+
+};
+
 static void set_flags_from_config(const LeanStoreConfig* config)
 {
    if (config->ssd_path) {
@@ -42,13 +47,13 @@ static void set_flags_from_config(const LeanStoreConfig* config)
    FLAGS_wal_offset_gib = config->wal_offset_gib;
 }
 
-void leanstore_init_config(LeanStoreConfig* config)
+LeanStoreConfig* leanstore_init_config()
 {
-   if (!config)
-      return;
+
+   LeanStoreConfig* config = new LeanStoreConfig();
 
    memset(config, 0, sizeof(LeanStoreConfig));
-   config->ssd_path = "";
+   config->ssd_path = "/home/devan/.leanstore/data";
    config->recover_file = "./leanstore.json";
    config->persist_file = "./leanstore.json";
    config->recover = 0;
@@ -61,6 +66,8 @@ void leanstore_init_config(LeanStoreConfig* config)
    config->falloc = 0;
    config->worker_threads = 1;
    config->wal_offset_gib = 0;
+
+   return config;
 }
 
 LeanStoreHandle* leanstore_open(const LeanStoreConfig* config)
