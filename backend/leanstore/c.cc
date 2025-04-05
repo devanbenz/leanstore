@@ -1,42 +1,15 @@
 #include "c.h"
 #include "LeanStore.hpp"
 
-#include <cstring>
-#include <memory>
-
 #include "../../frontend/shared/GenericSchema.hpp"
+#include "../../frontend/shared/LeanStoreAdapter.hpp"
 
 using namespace leanstore;
 
-struct AbstractDataType
-{
-   byte *data;
-   size_t size;
-   int32_t data_type;
-};
-
-struct BytesPayloadHandle
-{
-   AbstractDataType data;
-};
-
-struct RelationHandler
-{
-   void* key{};
-   void* bytes{};
-};
-
-struct CRManagerHandle {
-   cr::CRManager* cr_manager_inner;
-};
+// LeanStore C API
 
 struct LeanStoreHandle {
    std::unique_ptr<LeanStore> store;
-};
-
-struct LeanStoreAdapter
-{
-   std::unique_ptr<LeanStoreAdapter> adapter;
 };
 
 static void set_flags_from_config(const LeanStoreConfig* config)
@@ -80,7 +53,7 @@ void leanstore_init_config(LeanStoreConfig* config)
    config->persist_file = "./leanstore.json";
    config->recover = 0;
    config->persist = 0;
-   config->vi = 0;
+   config->vi = 1;
    config->wal = 1;
    config->isolation_level = "repeatable_read";
    config->mv = 0;
@@ -89,11 +62,6 @@ void leanstore_init_config(LeanStoreConfig* config)
    config->worker_threads = 1;
    config->wal_offset_gib = 0;
 }
-
-struct JobCtx {
-   JobFunction fn;
-   void* arg;
-};
 
 LeanStoreHandle* leanstore_open(const LeanStoreConfig* config)
 {
@@ -120,56 +88,111 @@ void leanstore_close(LeanStoreHandle* handle)
       delete handle;
 }
 
+// ----------------------------------------------------------------------------------------------
+
+// LeanStore concurrency manager C API
+
+struct CRManagerHandle {
+   std::unique_ptr<cr::CRManager> cr_manager_inner;
+};
+
 CRManagerHandle* leanstore_get_cr_manager(LeanStoreHandle* leanstore_handle)
 {
    if (!leanstore_handle)
       return nullptr;
-   cr::CRManager* cr_manager = leanstore_handle->store->cr_manager.get();
+   auto cr_manager = std::move(leanstore_handle->store->cr_manager);
    if (!cr_manager)
       return nullptr;
 
    CRManagerHandle* cr_manager_handle = new CRManagerHandle();
-   cr_manager_handle->cr_manager_inner = cr_manager;
+   cr_manager_handle->cr_manager_inner = std::move(cr_manager);
 
-   return cr_manager_handle;
+   return std::move(cr_manager_handle);
 }
 
 void leanstore_release_cr_manager(CRManagerHandle* cr_manager)
 {
    if (!cr_manager)
       return;
-   cr::CRManager* cr_manager_inner = cr_manager->cr_manager_inner;
+   std::unique_ptr<cr::CRManager> cr_manager_inner = std::move(cr_manager->cr_manager_inner);
    if (!cr_manager_inner)
       return;
-   delete cr_manager_inner;
 }
+
+
+struct JobCtx {
+   JobFunction fn;
+   void* arg;
+};
 
 static void job_adapter(void* ctx)
 {
-   JobCtx* job_ctx = static_cast<JobCtx*>(ctx);
+   auto* job_ctx = static_cast<JobCtx*>(ctx);
    job_ctx->fn(job_ctx->arg);
    delete job_ctx;
 }
 
-void crm_schedule_job_sync(CRManagerHandle* handle, uint64_t jobid, JobFunction fn, void* data)
+void leanstore_crm_schedule_job_sync(CRManagerHandle* handle, uint64_t jobid, JobFunction fn, void* data)
 {
    if (!handle)
       return;
-   cr::CRManager* cr_manager = handle->cr_manager_inner;
+   std::unique_ptr<cr::CRManager> cr_manager = std::move(handle->cr_manager_inner);
    if (!cr_manager)
       return;
 
-   JobCtx* ctx = new JobCtx{fn, data};
+   auto* ctx = new JobCtx{fn, data};
 
-   std::function<void()> cpp_fn = [ctx]() { job_adapter(ctx); };
+   const std::function cpp_fn = [ctx]() { job_adapter(ctx); };
 
    cr_manager->scheduleJobSync(jobid, cpp_fn);
 }
 
-LeanStoreAdapterHandle* leanstore_open_adapter(LeanStoreHandle* handle)
-{
-   if (!handle) return nullptr;
+// ----------------------------------------------------------------------------------------------
 
+// LeanStoreAdapter C API
+
+struct LeanStoreAdapterHandle
+{
+   LeanStoreAdapter<Relation<unsigned long, BytesPayload<8>>> leanstore_adapter;
+};
+
+LeanStoreAdapterHandle* leanstore_get_adapter_u8()
+{
+   using Key = u64;
+   using Payload = BytesPayload<8>;
+   using KVPair = Relation<Key, Payload>;
+
+   LeanStoreAdapterHandle* adapter = new LeanStoreAdapterHandle();
+   adapter->leanstore_adapter = LeanStoreAdapter<KVPair>();
+
+   return adapter;
 }
 
-void leanstore_release_adapter(LeanStoreAdapterHandle* adapter);
+void leanstore_create_table(CRManagerHandle* handle, LeanStoreAdapterHandle* adapter, LeanStoreHandle* db_handle, uint64_t jobid, char* table_name)
+{
+   // TODO(DB): Make this generic. Right now I'm hard coding the sizes
+   using Key = u64;
+   using Payload = BytesPayload<8>;
+   using KVPair = Relation<Key, Payload>;
+
+   if (!handle)
+      return;
+   cr::CRManager* cr_manager = handle->cr_manager_inner.get();
+   if (!cr_manager)
+      return;
+   if (!adapter)
+      return;
+   if (!table_name)
+      return;
+   if (!db_handle)
+      return;
+
+   auto db = db_handle->store.get();
+
+   cr_manager->scheduleJobSync(jobid, [&] {adapter->leanstore_adapter = LeanStoreAdapter<KVPair>(*db, table_name); ;});
+}
+
+void leanstore_release_adapter(LeanStoreAdapterHandle* adapter)
+{
+   free(adapter);
+}

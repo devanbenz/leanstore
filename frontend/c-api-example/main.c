@@ -1,8 +1,8 @@
 #include "leanstore/c.h"
 
-void create_table(void* data)
+void create_table(LeanStoreAdapterHandle* leanstore_adapter)
 {
-   int* i = (int*)data;
+
 }
 
 int main() {
@@ -12,8 +12,7 @@ int main() {
    config.ssd_path = "/home/devan/.leanstore/data";
 
    LeanStoreHandle* leanstore = leanstore_open(&config);
-
-   CRManagerHandle* cr_manager = leanstore_get_cr_manager(leanstore);
-   char* table_name = "ExampleTable";
-   crm_schedule_job_sync(cr_manager, 0, create_table, table_name);
+   LeanStoreAdapterHandle* leanstore_adapter = leanstore_get_adapter_u8();
+   CRManagerHandle* crmanager = leanstore_get_cr_manager(leanstore);
+   leanstore_create_table(crmanager, leanstore_adapter, leanstore, 0, "Example");
 }

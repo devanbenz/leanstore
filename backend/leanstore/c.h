@@ -1,22 +1,14 @@
 #pragma once
-#include <gflags/gflags_declare.h>
-
-#include <functional>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-   typedef struct BytesPayloadHandle BytesPayloadHandle;
-
-   typedef struct RelationHandler RelationHandler;
-
    typedef struct LeanStoreHandle LeanStoreHandle;
-
    typedef struct LeanStoreAdapterHandle LeanStoreAdapterHandle;
-
    typedef struct CRManagerHandle CRManagerHandle;
-
+   typedef void (*JobFunction)(void* fn);
    typedef struct {
       const char* ssd_path;
       const char* recover_file;
@@ -33,7 +25,6 @@ extern "C" {
       int wal_offset_gib;
    } LeanStoreConfig;
 
-   typedef void (*JobFunction)(void* fn);
 
    void leanstore_init_config(LeanStoreConfig* config);
 
@@ -43,13 +34,15 @@ extern "C" {
 
    CRManagerHandle* leanstore_get_cr_manager(LeanStoreHandle* handle);
 
-   void crm_schedule_job_sync(CRManagerHandle* handle, uint64_t jobid, JobFunction job, void* fn);
+   void leanstore_crm_schedule_job_sync(CRManagerHandle* handle, uint64_t jobid, JobFunction job, void* fn);
 
    void leanstore_release_cr_manager(CRManagerHandle* cr_manager);
 
-   LeanStoreAdapterHandle* leanstore_get_adapter(LeanStoreHandle* handle);
+   LeanStoreAdapterHandle* leanstore_get_adapter_u8();
 
    void leanstore_release_adapter(LeanStoreAdapterHandle* adapter);
+
+   void leanstore_create_table(CRManagerHandle* handle, LeanStoreAdapterHandle* adapter, LeanStoreHandle* db_handle, uint64_t jobid, char* table_name);
 
 #ifdef __cplusplus
 }
