@@ -12,11 +12,6 @@ struct LeanStoreHandle {
    std::unique_ptr<LeanStore> store;
 };
 
-struct LeanStoreConfig
-{
-
-};
-
 static void set_flags_from_config(const LeanStoreConfig* config)
 {
    if (config->ssd_path) {
