@@ -63,3 +63,7 @@ add_executable(lmdb_ycsb ycsb/lmdb_ycsb.cpp)
 target_link_libraries(lmdb_ycsb leanstore lmdb Threads::Threads)
 target_include_directories(lmdb_ycsb PRIVATE ${SHARED_INCLUDE_DIRECTORY})
 # sudo apt-get install liblmdb-dev
+
+add_executable(c-api-example c-api-example/main.c)
+target_link_libraries(c-api-example leanstore Threads::Threads)
+target_include_directories(c-api-example PRIVATE ${SHARED_INCLUDE_DIRECTORY})
